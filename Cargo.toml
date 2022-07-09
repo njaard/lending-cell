@@ -1,0 +1,13 @@
+[package]
+name = "lending-cell"
+version = "0.1.0"
+edition = "2021"
+authors = ["Charles Samuels <ks@ks.ax>"]
+description = "Like a cell, but make lifetimes dynamic instead of ownership"
+license = "BSD-2-Clause"
+readme="README.md"
+repository = "https://github.com/njaard/lending-cell"
+keywords = ["borrowing","aliasing","ownership","lifetime"]
+documentation="https://docs.rs/lending-cell"
+
+[dependencies]
