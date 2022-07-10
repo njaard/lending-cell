@@ -46,6 +46,10 @@ pub struct LendingCell<T> {
     thing: Arc<UnsafeCell<T>>,
 }
 
+// SAFETY: type imitates T ownership
+unsafe impl<T: Sync> Sync for LendingCell<T> {}
+unsafe impl<T: Send> Send for LendingCell<T> {}
+
 impl<T> LendingCell<T> {
     /// Creates a new LendingCell with the given value
     pub fn new(thing: T) -> Self {
@@ -113,6 +117,10 @@ impl<T> LendingCell<T> {
 pub struct BorrowedCell<T> {
     thing: Arc<UnsafeCell<T>>,
 }
+
+// SAFETY: type imitates either a mutable reference or an ownership
+unsafe impl<T: Send> Send for BorrowedCell<T> {}
+unsafe impl<T: Sync> Sync for BorrowedCell<T> {}
 
 impl<T> Deref for BorrowedCell<T> {
     type Target = T;
