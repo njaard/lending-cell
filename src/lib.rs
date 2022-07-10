@@ -123,6 +123,6 @@ impl<T> Deref for BorrowedCell<T> {
 
 impl<T> DerefMut for BorrowedCell<T> {
     fn deref_mut(&mut self) -> &mut T {
-        unsafe { &mut *(Arc::as_ptr(&self.thing) as *mut T) }
+        unsafe { &mut *self.thing.get() }
     }
 }
