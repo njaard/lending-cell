@@ -27,6 +27,7 @@
 //! is active, the `LendingCell` behaves as though it is an `Option`
 //! containing `None`.
 
+use std::cell::UnsafeCell;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
@@ -42,14 +43,14 @@ use std::sync::Arc;
 /// assert!(lender.try_get().is_some());
 /// ```
 pub struct LendingCell<T> {
-    thing: Arc<T>,
+    thing: Arc<UnsafeCell<T>>,
 }
 
 impl<T> LendingCell<T> {
     /// Creates a new LendingCell with the given value
     pub fn new(thing: T) -> Self {
         Self {
-            thing: Arc::new(thing),
+            thing: Arc::new(UnsafeCell::new(thing)),
         }
     }
 
@@ -57,7 +58,7 @@ impl<T> LendingCell<T> {
     /// [`LendingCell::to_borrowed`]
     pub fn try_get(&self) -> Option<&T> {
         if Arc::strong_count(&self.thing) == 1 {
-            Some(unsafe { &*Arc::as_ptr(&self.thing) })
+            Some(unsafe { &*self.thing.get() })
         } else {
             None
         }
@@ -72,11 +73,7 @@ impl<T> LendingCell<T> {
     /// Get a mutable reference the contained value if it wasn't borrowed with
     /// [`LendingCell::to_borrowed`]
     pub fn try_get_mut(&mut self) -> Option<&mut T> {
-        if Arc::strong_count(&self.thing) == 1 {
-            Some(unsafe { &mut *(Arc::as_ptr(&self.thing) as *mut T) })
-        } else {
-            None
-        }
+        Arc::get_mut(&mut self.thing).map(|c| c.get_mut())
     }
 
     /// Get a mutable reference the contained value if it wasn't borrowed with
@@ -96,7 +93,7 @@ impl<T> LendingCell<T> {
     pub fn try_to_borrowed(&mut self) -> Option<BorrowedCell<T>> {
         if Arc::strong_count(&self.thing) == 1 {
             Some(BorrowedCell {
-                thing: self.thing.clone(),
+                thing: Arc::clone(&self.thing),
             })
         } else {
             None
@@ -105,20 +102,22 @@ impl<T> LendingCell<T> {
 
     /// Destroy the container and return the contained object if it isn't
     /// being borrowed already. If it fails, return myself `LendingCell`
-    pub fn try_into_inner(self) -> std::result::Result<T, Self> {
-        Arc::try_unwrap(self.thing).map_err(|a| LendingCell { thing: a })
+    pub fn try_into_inner(self) -> Result<T, Self> {
+        Arc::try_unwrap(self.thing)
+            .map(|x| x.into_inner())
+            .map_err(|a| LendingCell { thing: a })
     }
 }
 
 /// The container that ensures you have borrowed the [`LendingCell`].
 pub struct BorrowedCell<T> {
-    thing: Arc<T>,
+    thing: Arc<UnsafeCell<T>>,
 }
 
 impl<T> Deref for BorrowedCell<T> {
     type Target = T;
     fn deref(&self) -> &T {
-        unsafe { &*Arc::as_ptr(&self.thing) }
+        unsafe { &*self.thing.get() }
     }
 }
 
