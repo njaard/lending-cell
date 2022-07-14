@@ -26,6 +26,15 @@
 //! `T`), but also partially at runtime (while the `BorrowedCell`
 //! is active, the `LendingCell` behaves as though it is an `Option`
 //! containing `None`.
+//!
+//! # Why
+//! A general use for this crate is when you need a reference to a variable,
+//! but you're not able to use a lifetime. For example, Rust's [`Iterator`]
+//! type [doesn't allow a lifetime](https://rust-lang.github.io/rfcs/1598-generic_associated_types.html)
+//! on each `Item` that's independent of the container you're iterating over
+//! which means that Rust only allows you to iterate over a container
+//! with a lifetime exceeding your iterator, or to consume the container.
+//! What if instead you had to modify your
 
 use std::cell::UnsafeCell;
 use std::ops::{Deref, DerefMut};
